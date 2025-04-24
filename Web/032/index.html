@@ -1,273 +1,215 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
+
 <head>
-  <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>小孙同学&#10084;&#65039;</title>
-    <script src="https://cdn.jsdelivr.net/gh/zyoushuo/Blog/hexo/js/mouse_slide.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/zyoushuo/Blog/hexo/js/clicklove.js"></script>
-  <style type="text/css">
-    html, body {
-      height: 100%;
-      padding: 0;
-      margin: 0;
-      background: #000;
-    }
-    canvas {
-      position: absolute;
-      width: 100%;
-      height: 100%;
-    }
-    .namebox{
-      color: #fff;
-      position: absolute;   
-            top: 50%;   
-            left: 50%;   
-            -webkit-transform: translate(-50%, -50%);   
-            -moz-transform: translate(-50%, -50%);   
-            -ms-transform: translate(-50%, -50%);   
-            -o-transform: translate(-50%, -50%);   
-            transform: translate(-50%, -50%);   
-    }
-    .namebox h1{
-      margin: 0 auto;
-    }
-  </style>
+    <title>诗匣寻句</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-family: Arial, sans-serif;
+        }
 
-</head>
-<body>
-<canvas id="pinkboard"></canvas>
-<script>
-  var settings = {
-    particles: {
-      length: 500, // maximum amount of particles
-      duration: 2, // particle duration in sec
-      velocity: 100, // particle velocity in pixels/sec
-      effect: -0.75, // play with this for a nice effect
-      size: 30, // particle size in pixels
-    },
-  };
-  (
-          function(){
-            var b=0;
-            var c=["ms","moz","webkit","o"];
-            for(var a=0;a<c.length&&!window.requestAnimationFrame;++a){
-              window.requestAnimationFrame=window[c[a]+"RequestAnimationFrame"];
-              window.cancelAnimationFrame=window[c[a]+"CancelAnimationFrame"]||window[c[a]+"CancelRequestAnimationFrame"]
+        #gameContainer {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            margin: 20px;
+            width: 700px;
+        }
+
+        .word {
+            padding: 15px;
+            border: 2px solid #4CAF50;
+            border-radius: 5px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        #answerBox {
+            min-height: 60px;
+            border: 2px dashed #2196F3;
+            padding: 10px;
+            margin: 20px;
+            width: 700px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            align-items: center;
+            font-size: 1.2em;
+        }
+
+        .complete-verse {
+            color: #4CAF50;
+            font-weight: bold;
+            width: 100%;
+            text-align: center;
+            animation: fadeIn 1s;
+        }
+
+        .correct {
+            background-color: #e8f5e9 !important;
+        }
+
+        @keyframes shake {
+            0% {
+                background-color: red;
             }
-            if(!window.requestAnimationFrame){
-              window.requestAnimationFrame=function(h,e){
-                var d=new Date().getTime();
-                var f=Math.max(0,16-(d-b));
-                var g=window.setTimeout(function(){h(d+f)},f);b=d+f;return g}}if(!window.cancelAnimationFrame){window.cancelAnimationFrame=function(d){clearTimeout(d)}}}());
-  var Point = (function() {
-    function Point(x, y) {
-      this.x = (typeof x !== 'undefined') ? x : 0;
-      this.y = (typeof y !== 'undefined') ? y : 0;
-    }
-    Point.prototype.clone = function() {
-      return new Point(this.x, this.y);
-    };
-    Point.prototype.length = function(length) {
-      if (typeof length == 'undefined')
-        return Math.sqrt(this.x * this.x + this.y * this.y);
-      this.normalize();
-      this.x *= length;
-      this.y *= length;
-      return this;
-    };
 
-    Point.prototype.normalize = function() {
-      var length = this.length();
-      this.x /= length;
-      this.y /= length;
-      return this;
-    };
-    return Point;
-  })();
+            100% {
+                background-color: white;
+            }
+        }
 
-  var Particle = (function() {
-    function Particle() {
-      this.position = new Point();
-      this.velocity = new Point();
-      this.acceleration = new Point();
-      this.age = 0;
-    }
-    Particle.prototype.initialize = function(x, y, dx, dy) {
-      this.position.x = x;
-      this.position.y = y;
-      this.velocity.x = dx;
-      this.velocity.y = dy;
-      this.acceleration.x = dx * settings.particles.effect;
-      this.acceleration.y = dy * settings.particles.effect;
-      this.age = 0;
-    };
-    Particle.prototype.update = function(deltaTime) {
-      this.position.x += this.velocity.x * deltaTime;
-      this.position.y += this.velocity.y * deltaTime;
-      this.velocity.x += this.acceleration.x * deltaTime;
-      this.velocity.y += this.acceleration.y * deltaTime;
-      this.age += deltaTime;
-    };
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
 
-    Particle.prototype.draw = function(context, image) {
-      function ease(t) {
-        return (--t) * t * t + 1;
-      }
-      var size = image.width * ease(this.age / settings.particles.duration);
-      context.globalAlpha = 1 - this.age / settings.particles.duration;
-      context.drawImage(image, this.position.x - size / 2, this.position.y - size / 2, size, size);
-    };
-    return Particle;
-  })();
-  /*
+            to {
+                opacity: 1;
+            }
+        }
 
-  * ParticlePool class
+        .wrong {
+            animation: shake 0.5s;
+        }
 
-  */
-  var ParticlePool = (function() {
-    var particles,
-            firstActive = 0,
-            firstFree = 0,
-            duration = settings.particles.duration;
-    function ParticlePool(length) {
-// create and populate particle pool
-      particles = new Array(length);
-      for (var i = 0; i < particles.length; i++)
-        particles[i] = new Particle();
-    }
-    ParticlePool.prototype.add = function(x, y, dx, dy) {
-      particles[firstFree].initialize(x, y, dx, dy);
-// handle circular queue
-      firstFree++;
-      if (firstFree == particles.length) firstFree = 0;
-      if (firstActive == firstFree ) firstActive++;
-      if (firstActive == particles.length) firstActive = 0;
-    };
-    ParticlePool.prototype.update = function(deltaTime) {
-      var i;
-// update active particles
-      if (firstActive < firstFree) {
-        for (i = firstActive; i < firstFree; i++)
-          particles[i].update(deltaTime);
-      }
-      if (firstFree < firstActive) {
-        for (i = firstActive; i < particles.length; i++)
-          particles[i].update(deltaTime);
-        for (i = 0; i < firstFree; i++)
-          particles[i].update(deltaTime);
-      }
-// remove inactive particles
-      while (particles[firstActive].age >= duration && firstActive != firstFree) {
-        firstActive++;
-        if (firstActive == particles.length) firstActive = 0;
-      }
-    };
-    ParticlePool.prototype.draw = function(context, image) {
-// draw active particles
-      if (firstActive < firstFree) {
-        for (i = firstActive; i < firstFree; i++)
-          particles[i].draw(context, image);
-      }
-      if (firstFree < firstActive) {
-        for (i = firstActive; i < particles.length; i++)
-          particles[i].draw(context, image);
-        for (i = 0; i < firstFree; i++)
-          particles[i].draw(context, image);
-      }
-    };
-    return ParticlePool;
-  })();
-  /*
+        #head {
+            font-family: cursive;
+        }
 
-  * Putting it all together
+        #message {
+            font-size: 1.2em;
+            font-family: cursive;
+            color: #2196F3;
+            margin: 10px;
+            /* opacity: 0; */
+        }
 
-  */
-  (function(canvas) {
-    var context = canvas.getContext('2d'),
-            particles = new ParticlePool(settings.particles.length),
-            particleRate = settings.particles.length / settings.particles.duration, // particles/sec
-            time;
-// get point on heart with -PI <= t <= PI
-    function pointOnHeart(t) {
-      return new Point(
-              160 * Math.pow(Math.sin(t), 3),
-              130 * Math.cos(t) - 50 * Math.cos(2 * t) - 20 * Math.cos(3 * t) - 10 * Math.cos(4 * t) + 25
-      );
+        #restartButton {
+            margin: 20px auto;
+            padding: 10px 30px;
+            background-color: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1.1em;
+            transition: background-color 0.3s;
+            display: none;
+        }
 
-    }
+        #restartButton:hover {
+            background-color: #1976D2;
+        }
+    </style>
+</head>
 
-// creating the particle image using a dummy canvas
+<body>
+    <h2 id="head">小明不小心打翻了诗匣，散落的文字里藏着诗句，请你帮他找一找！</h2>
+    <div id="message">请按正确顺序点击诗句文字</div>
+    <div id="gameContainer"></div>
+    <div id="answerBox"></div>
+    <button id="restartButton">再来一次</button>
 
-    var image = (function() {
-      var canvas = document.createElement('canvas'),
-              context = canvas.getContext('2d');
-      canvas.width = settings.particles.size;
-      canvas.height = settings.particles.size;
-// helper function to create the path
-      function to(t) {
-        var point = pointOnHeart(t);
-        point.x = settings.particles.size / 2 + point.x * settings.particles.size / 350;
-        point.y = settings.particles.size / 2 - point.y * settings.particles.size / 350;
-        return point;
-      }
-// create the path
-      context.beginPath();
-      var t = -Math.PI;
-      var point = to(t);
-      context.moveTo(point.x, point.y);
-      while (t < Math.PI) {
-        t += 0.01; // baby steps!
-        point = to(t);
-        context.lineTo(point.x, point.y);
-      }
-      context.closePath();
-// create the fill
-      context.fillStyle = '#ff30c5';
-      // context.fillStyle = '#ea80b0';
-      context.fill();
-// create the image
-      var image = new Image();
-      image.src = canvas.toDataURL();
-      return image;
-    })();
-// render that thing!
-    function render() {
-// next animation frame
-      requestAnimationFrame(render);
-// update time
-      var newTime = new Date().getTime() / 1000,
-              deltaTime = newTime - (time || newTime);
-      time = newTime;
-// clear canvas
-      context.clearRect(0, 0, canvas.width, canvas.height);
-// create new particles
-      var amount = particleRate * deltaTime;
-      for (var i = 0; i < amount; i++) {
-        var pos = pointOnHeart(Math.PI - 2 * Math.PI * Math.random());
-        var dir = pos.clone().length(settings.particles.velocity);
-        particles.add(canvas.width / 2 + pos.x, canvas.height / 2 - pos.y, dir.x, -dir.y);
-      }
-// update and draw particles
-      particles.update(deltaTime);
-      particles.draw(context, image);
-    }
-// handle (re-)sizing of the canvas
-    function onResize() {
-      canvas.width = canvas.clientWidth;
-      canvas.height = canvas.clientHeight;
-    }
-    window.onresize = onResize;
-// delay rendering bootstrap
-    setTimeout(function() {
-      onResize();
-      render();
-    }, 10);
-  })(document.getElementById('pinkboard'));
-</script>
-<div class="namebox">
-  <h1>小孙同学&#10084;&#65039;小爱同学</h1>
-</div>
+    <script>
+        const verses = [
+            "明月几时有，把酒问青天",
+            "不知天上宫阙，今夕是何年",
+            "我欲乘风归去，又恐琼楼玉宇，高处不胜寒",
+            "起舞弄清影，何似在人间",
+            "转朱阁，低绮户，照无眠",
+            "不应有恨，何事长向别时圆",
+            "人有悲欢离合，月有阴晴圆缺，此事古难全",
+            "但愿人长久，千里共婵娟"
+        ];
+
+        const commonWords = "的一是在不了有和人这中大为上个国我以要他时来用们生到作地于出就分对成会可主发年动同工也能下过子说产种面而方后多定行学法所民得经十三之进着等部度家电力里如水化高自二理起小物现实加量都两体制机当使点从业本去把性好应开它合还因由其些然前外天政四日那社义事平形相全表间样与关各重新线内数正心反你明看原又么利比或但质气第向道命此变条只没结解问意建月公无系军很情者最立代想已通并提直题党程展五果料象员革位入常文总次品式活设及管特件长求老头基资边流路级少图山统接知较将组见计别她手角期根论运农指几九区强放决西被干做必战先回则任取据处队南给色光门即保治北造百规热领七海口东导器压志世金增争济阶油思术极交受联什认六共权收证改清己美再采转更单风切打白教速花带安场身车例真务具万每目至达走积示议声报斗完类八离华名确才科张信马节话米整空元况今集温传土许步群广石记需段研界拉林律叫且究观越织装影算低持音众书布复容儿须际商非验连断深难近矿千周委素技备半办青省列习响约支般史感劳便团往酸历市克何除消构府称太准精值号率族维划选标写存候亲毛快效斯院查江型眼王按格养易置派层片始却专状育厂京识适属圆包火住调满县局照参红细引听该铁价严";
+
+        let currentStep = 0;
+        let originalVerse = "";
+        let cleanVerse = "";
+        const answerBox = document.getElementById('answerBox');
+        const gameContainer = document.getElementById('gameContainer');
+        const restartButton = document.getElementById('restartButton');
+
+        function getRandomVerse() {
+            originalVerse = verses[Math.floor(Math.random() * verses.length)];
+            cleanVerse = originalVerse.replace(/[，。、]/g, '');
+            return cleanVerse.split('');
+        }
+
+        function generateGameWords() {
+            const correctVerse = getRandomVerse();
+            const gameWords = [...correctVerse];
+
+            while (gameWords.length < 20) {
+                const randomWord = commonWords[Math.floor(Math.random() * commonWords.length)];
+                if (!gameWords.includes(randomWord)) gameWords.push(randomWord);
+            }
+
+            return gameWords.sort(() => Math.random() - 0.5);
+        }
+
+        function initGame() {
+            currentStep = 0;
+            answerBox.innerHTML = '';
+            restartButton.style.display = 'none';
+            const words = generateGameWords();
+            gameContainer.innerHTML = '';
+            words.forEach(word => {
+                const div = document.createElement('div');
+                div.className = 'word';
+                div.textContent = word;
+                div.onclick = handleClick;
+                gameContainer.appendChild(div);
+            });
+        }
+
+        function handleClick(e) {
+            const selectedWord = e.target.textContent;
+            const correctVerse = cleanVerse.split('');
+
+            if (selectedWord === correctVerse[currentStep]) {
+                e.target.style.background = "#C8E6C9";
+                e.target.style.cursor = "default";
+                e.target.onclick = null;
+
+                const answerWord = document.createElement('div');
+                answerWord.className = 'word correct';
+                answerWord.textContent = selectedWord;
+                answerBox.appendChild(answerWord);
+
+                currentStep++;
+
+                if (currentStep === correctVerse.length) {
+                    new Audio('data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU').play();
+                    setTimeout(() => {
+                        answerBox.innerHTML = `<div class="complete-verse">${originalVerse}</div>`;
+                        restartButton.style.display = 'block';
+                    }, 500);
+                }
+            } else {
+                e.target.classList.add('wrong');
+                setTimeout(() => e.target.classList.remove('wrong'), 500);
+            }
+        }
+
+        restartButton.onclick = () => {
+            initGame();
+            // 重置所有文字状态
+            document.querySelectorAll('.word').forEach(word => {
+                word.style.background = "";
+                word.style.cursor = "pointer";
+                word.onclick = handleClick;
+            });
+        };
+
+        initGame();
+    </script>
 </body>
+
 </html>
